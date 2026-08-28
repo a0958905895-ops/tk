@@ -31,15 +31,15 @@ jobs:
             flutter create . --platforms=android --org com.example
           fi
 
-      - name: Fix Android SDK & Build Tools Version
+      - name: Upgrade AGP & Kotlin Version
         run: |
-          # 修正 compileSdk 與 buildToolsVersion 避免 aapt2 解析錯誤
-          sed -i 's/compileSdk = .*/compileSdk = 34/' android/app/build.gradle
-          sed -i 's/compileSdkVersion .*/compileSdkVersion 34/' android/app/build.gradle
-          sed -i 's/id "org.jetbrains.kotlin.android" version ".*"/id "org.jetbrains.kotlin.android" version "1.9.20"/' android/settings.gradle
+          # 升級 Android Gradle Plugin 與 Kotlin 版本
+          sed -i 's/id "com.android.application" version .*/id "com.android.application" version "8.3.0" apply false/' android/settings.gradle
+          sed -i 's/id "org.jetbrains.kotlin.android" version .*/id "org.jetbrains.kotlin.android" version "1.9.20" apply false/' android/settings.gradle
           
-          # 強制指定較新的 Build Tools 版本
-          echo 'android.buildToolsVersion="34.0.0"' >> android/gradle.properties
+          # 設定 compileSdk 為 35 以支援 flutter_plugin_android_lifecycle
+          sed -i 's/compileSdk = .*/compileSdk = 35/' android/app/build.gradle
+          sed -i 's/compileSdkVersion .*/compileSdkVersion 35/' android/app/build.gradle
 
       - name: Install Dependencies
         run: flutter pub get
