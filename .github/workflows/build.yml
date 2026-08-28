@@ -31,6 +31,16 @@ jobs:
             flutter create . --platforms=android --org com.example
           fi
 
+      - name: Upgrade Kotlin and Android SDK Version
+        run: |
+          # 更新 compileSdk 到 35
+          sed -i 's/compileSdk = .*/compileSdk = 35/' android/app/build.gradle
+          sed -i 's/compileSdkVersion .*/compileSdkVersion 35/' android/app/build.gradle
+          
+          # 更新 Kotlin 版本至 1.9.20 以符合套件需求
+          sed -i 's/id "org.jetbrains.kotlin.android" version ".*"/id "org.jetbrains.kotlin.android" version "1.9.20"/' android/settings.gradle
+          sed -i 's/ext.kotlin_version = .*/ext.kotlin_version = "1.9.20"/' android/build.gradle
+
       - name: Install Dependencies
         run: flutter pub get
 
