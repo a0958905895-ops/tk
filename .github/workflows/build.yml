@@ -25,23 +25,17 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: Create Android Project if Missing
+      - name: Create Android Project
         run: |
           if [ ! -d "android" ]; then
-            flutter create . --platforms=android
+            flutter create . --platforms=android --org com.example
           fi
-
-      - name: Fix Android Build Settings
-        run: |
-          sed -i 's/compileSdkVersion.*/compileSdkVersion 36/' android/app/build.gradle
-          sed -i 's/targetSdkVersion.*/targetSdkVersion 36/' android/app/build.gradle
-          sed -i '/buildTypes {/a \        release {\n            minifyEnabled false\n            shrinkResources false\n        }' android/app/build.gradle
 
       - name: Install Dependencies
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-shrink
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
