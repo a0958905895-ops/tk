@@ -5,7 +5,7 @@ import 'package:excel/excel.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:path/path.dart' hide Context; // 避免與 BuildContext 衝突
+import 'package:path/path.dart' as path; // 使用別名避免 BuildContext 衝突
 
 void main() {
   runApp(const MaterialApp(
@@ -14,7 +14,7 @@ void main() {
   ));
 }
 
-// 模擬資料庫類別（包含 save 與 del）
+// 模擬資料庫類別
 class DB {
   static Future<void> save(Map<String, dynamic> data, [dynamic id]) async {}
   static Future<void> del(dynamic id) async {}
