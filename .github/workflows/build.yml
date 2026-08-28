@@ -31,24 +31,27 @@ jobs:
             flutter create . --platforms=android --org com.example
           fi
 
-      - name: Upgrade AGP, Gradle Wrapper & Kotlin
+      - name: Configure Android Build, NDK and Disable R8
         run: |
-          # 1. 升級 Android Gradle Plugin (8.3.0) 與 Kotlin (1.9.20)
+          # 1. 升級 AGP (8.3.0) 與 Kotlin (1.9.20)
           sed -i 's/id "com.android.application" version .*/id "com.android.application" version "8.3.0" apply false/' android/settings.gradle
           sed -i 's/id "org.jetbrains.kotlin.android" version .*/id "org.jetbrains.kotlin.android" version "1.9.20" apply false/' android/settings.gradle
           
-          # 2. 將 Gradle 包版本升級至 8.4 以支援 AGP 8.3.0
+          # 2. 升級 Gradle Wrapper 至 8.4
           sed -i 's/gradle-.*-all.zip/gradle-8.4-bin.zip/' android/gradle/wrapper/gradle-wrapper.properties
           
-          # 3. 設定 compileSdk 為 35
-          sed -i 's/compileSdk = .*/compileSdk = 35/' android/app/build.gradle
-          sed -i 's/compileSdkVersion .*/compileSdkVersion 35/' android/app/build.gradle
+          # 3. 設定 compileSdk 與 ndkVersion
+          sed -i 's/compileSdk = .*/compileSdk = 35\n    ndkVersion = "25.1.8937393"/' android/app/build.gradle
+          sed -i 's/compileSdkVersion .*/compileSdkVersion 35\n    ndkVersion = "25.1.8937393"/' android/app/build.gradle
+
+          # 4. 關閉 R8 混淆，解決 ML Kit 類別丟失問題
+          sed -i '/buildTypes {/a \        release {\n            minifyEnabled false\n            shrinkResources false\n        }' android/app/build.gradle
 
       - name: Install Dependencies
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release --no-shrink
+        run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
