@@ -5,7 +5,7 @@ import 'package:excel/excel.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:path/path.dart' hide Context; // 解決 Context 衝突
+import 'package:path/path.dart' hide Context; // 避免與 BuildContext 衝突
 
 void main() {
   runApp(const MaterialApp(
@@ -14,16 +14,22 @@ void main() {
   ));
 }
 
-// 模擬資料庫類別（若已有 DB 實作可保留原樣）
+// 模擬資料庫類別（包含 save 與 del）
 class DB {
   static Future<void> save(Map<String, dynamic> data, [dynamic id]) async {}
+  static Future<void> del(dynamic id) async {}
 }
 
 const List<String> cols = [
-  '料號',
+  '日期',
   '請購單號',
+  '來料交期',
+  '料號',
+  '替代料號',
+  '基板材質',
+  '套數',
   '工單尺寸',
-  'PP 規格',
+  'PP層數',
   '是否請購',
   '使用庫存'
 ];
@@ -107,7 +113,7 @@ class _HomeState extends State<Home> {
                   child: ListTile(
                     title: Text(r['料號'] ?? ''),
                     subtitle: Text(
-                      '請購單：${r['請購單號'] ?? ''}\n尺寸：${r['工單尺寸'] ?? ''}｜PP：${r['PP 規格'] ?? ''}',
+                      '請購單：${r['請購單號'] ?? ''}\n尺寸：${r['工單尺寸'] ?? ''}',
                     ),
                     isThreeLine: true,
                     trailing: Column(
@@ -251,18 +257,27 @@ class Edit extends StatefulWidget {
 }
 
 class _EditState extends State<Edit> {
-  final Map<String, TextEditingController> cs = {};
+  late final Map<String, TextEditingController> cs;
   bool req = false;
   bool stock = false;
 
   @override
   void initState() {
     super.initState();
-    for (var col in cols) {
-      cs[col] = TextEditingController(text: widget.row?[col] ?? '');
+    cs = {
+      for (final c in cols.take(cols.length - 2))
+        c: TextEditingController(text: widget.row?[c]?.toString() ?? '')
+    };
+    req = (widget.row?['是否請購'] ?? '').toString().isNotEmpty;
+    stock = (widget.row?['使用庫存'] ?? '').toString().isNotEmpty;
+  }
+
+  @override
+  void dispose() {
+    for (final x in cs.values) {
+      x.dispose();
     }
-    req = (widget.row?['是否請購'] ?? '') == 'V';
-    stock = (widget.row?['使用庫存'] ?? '') == 'V';
+    super.dispose();
   }
 
   Future<void> save() async {
@@ -278,42 +293,50 @@ class _EditState extends State<Edit> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.row == null ? '新增料號' : '編輯料號')),
+      appBar: AppBar(
+        title: Text(widget.row == null ? '新增資料' : '編輯資料'),
+        actions: [
+          if (widget.row != null)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () async {
+                await DB.del(widget.row!['id']);
+                if (context.mounted) Navigator.pop(context);
+              },
+            )
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          ...cols.map((col) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+          ...cs.entries.map((e) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
                 child: TextField(
-                  controller: cs[col],
+                  controller: e.value,
                   decoration: InputDecoration(
-                    labelText: col,
+                    labelText: e.key,
                     border: const OutlineInputBorder(),
                   ),
                 ),
               )),
-          CheckboxListTile(
+          SwitchListTile(
             title: const Text('是否請購'),
             value: req,
-            onChanged: (v) => setState(() => req = v ?? false),
+            onChanged: (v) => setState(() => req = v),
           ),
-          CheckboxListTile(
+          SwitchListTile(
             title: const Text('使用庫存'),
             value: stock,
-            onChanged: (v) => setState(() => stock = v ?? false),
+            onChanged: (v) => setState(() => stock = v),
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
+          const SizedBox(height: 12),
+          FilledButton.icon(
             onPressed: save,
-            child: const Text('儲存'),
+            icon: const Icon(Icons.save),
+            label: const Text('儲存資料'),
           ),
         ],
       ),
     );
   }
-}
-class Edit extends StatefulWidget{final Map<String,dynamic>? row;const Edit({super.key,this.row});@override State<Edit> createState()=>_EditState();}
-class _EditState extends State<Edit>{late final Map<String,TextEditingController> cs;bool req=false,stock=false;@override void initState(){super.initState();cs={for(final c in cols.take(cols.length-2))c:TextEditingController(text:widget.row?[c]?.toString()??'')};req=(widget.row?['是否請購']??'').toString().isNotEmpty;stock=(widget.row?['使用庫存']??'').toString().isNotEmpty;}@override void dispose(){for(final x in cs.values)x.dispose();super.dispose();}
- @override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:Text(widget.row==null?'新增資料':'編輯資料'),actions:[if(widget.row!=null)IconButton(icon:const Icon(Icons.delete),onPressed:()async{await DB.del(widget.row!['id']);if(c.mounted)Navigator.pop(c);})]),body:ListView(padding:const EdgeInsets.all(16),children:[...cs.entries.map((e)=>Padding(padding:const EdgeInsets.only(bottom:10),child:TextField(controller:e.value,decoration:InputDecoration(labelText:e.key,border:const OutlineInputBorder())))),SwitchListTile(title:const Text('是否請購'),value:req,onChanged:(v)=>setState(()=>req=v)),SwitchListTile(title:const Text('使用庫存'),value:stock,onChanged:(v)=>setState(()=>stock=v)),const SizedBox(height:12),FilledButton.icon(onPressed:save,icon:const Icon(Icons.save),label:const Text('儲存資料'))]));
- Future<void> save()async{final m={for(final e in cs.entries)e.key:e.value.text.trim(),'是否請購':req?'V':'','使用庫存':stock?'V':''};await DB.save(m,widget.row?['id']);if(mounted)Navigator.pop(context);}
 }
