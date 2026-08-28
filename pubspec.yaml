@@ -19,4 +19,4 @@ dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/板材庫存.xlsx
+    - 板材庫存.xlsx
